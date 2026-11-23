@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Optional: lets you cross-build from macOS/Linux with the .NET SDK (build.sh).
+       On Windows nothing needs to be installed: use build.cmd instead. -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <!-- Keep the source compatible with the csc.exe bundled with Windows. -->
+    <LangVersion>5</LangVersion>
+    <AssemblyName>Wiggle</AssemblyName>
+    <RootNamespace>Wiggle</RootNamespace>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <DebugType>none</DebugType>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <ApplicationIcon Condition="Exists('Resources\Wiggle.ico')">Resources\Wiggle.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+  </ItemGroup>
+
+</Project>
