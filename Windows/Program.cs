@@ -19,6 +19,7 @@ using System.Windows.Forms;
 
 [assembly: AssemblyTitle("Wiggle")]
 [assembly: AssemblyProduct("Wiggle")]
+[assembly: AssemblyCopyright("Copyright © 2026 Daniel Solano")]
 [assembly: AssemblyVersion("1.0.0.0")]
 [assembly: AssemblyFileVersion("1.0.0.0")]
 
@@ -85,6 +86,13 @@ namespace Wiggle
         [DllImport("kernel32.dll")]
         public static extern uint SetThreadExecutionState(uint flags);
 
+        // Returns an NTSTATUS; 0 means success.
+        [DllImport("powrprof.dll")]
+        public static extern uint CallNtPowerInformation(
+            int level, IntPtr input, uint inputSize, out uint output, uint outputSize);
+
+        public const int SystemExecutionState = 16;
+
         /// <summary>Seconds since the last keyboard or mouse input in this session.</summary>
         public static double IdleSeconds()
         {
@@ -119,6 +127,7 @@ namespace Wiggle
         public int Distance = 2;         // pixels
         public bool OnlyWhenIdle = true;
         public bool KeepAwake = true;
+        public bool PauseForVideo = false;
         public bool Running = false;     // restored on the next launch
 
         private static string FilePath
@@ -162,6 +171,10 @@ namespace Wiggle
                     {
                         s.KeepAwake = flag;
                     }
+                    else if (key == "pauseForVideo" && bool.TryParse(value, out flag))
+                    {
+                        s.PauseForVideo = flag;
+                    }
                     else if (key == "running" && bool.TryParse(value, out flag))
                     {
                         s.Running = flag;
@@ -185,6 +198,7 @@ namespace Wiggle
                     "distance=" + Distance.ToString(CultureInfo.InvariantCulture),
                     "onlyWhenIdle=" + OnlyWhenIdle,
                     "keepDisplayAwake=" + KeepAwake,
+                    "pauseForVideo=" + PauseForVideo,
                     "running=" + Running
                 });
             }
@@ -306,9 +320,36 @@ namespace Wiggle
             // Fire one poll early so the idle time never exceeds the chosen interval.
             if (idle >= settings.Interval - PollSeconds)
             {
+                // Moving the cursor would bring up the player controls.
+                if (settings.PauseForVideo && IsVideoPlaying())
+                {
+                    return;
+                }
                 Jiggle();
                 sinceJiggle.Restart();
             }
+        }
+
+        /// <summary>
+        /// True while another program is holding the display awake, which is what
+        /// video players, browsers playing video, calls and presentations do.
+        /// </summary>
+        private bool IsVideoPlaying()
+        {
+            // The system-wide state includes our own request, so drop it for the query.
+            bool holdingOurOwn = running && settings.KeepAwake;
+            if (holdingOurOwn)
+            {
+                Native.SetThreadExecutionState(Native.EsContinuous);
+            }
+            uint state;
+            bool ok = Native.CallNtPowerInformation(
+                Native.SystemExecutionState, IntPtr.Zero, 0, out state, sizeof(uint)) == 0;
+            if (holdingOurOwn)
+            {
+                ApplyKeepAwake();
+            }
+            return ok && (state & Native.EsDisplayRequired) != 0;
         }
 
         private void Jiggle()
@@ -354,8 +395,14 @@ namespace Wiggle
         {
             menu.Items.Clear();
 
-            ToolStripMenuItem status = new ToolStripMenuItem(
-                running ? L("● Active", "● Activo") : L("○ Paused", "○ Pausado"));
+            string statusText = L("○ Paused", "○ Pausado");
+            if (running)
+            {
+                statusText = settings.PauseForVideo && IsVideoPlaying()
+                    ? L("● Active (paused for video)", "● Activo (en pausa por video)")
+                    : L("● Active", "● Activo");
+            }
+            ToolStripMenuItem status = new ToolStripMenuItem(statusText);
             status.Enabled = false;
             menu.Items.Add(status);
 
@@ -396,6 +443,12 @@ namespace Wiggle
             idleItem.Checked = settings.OnlyWhenIdle;
             menu.Items.Add(idleItem);
 
+            ToolStripMenuItem videoItem = new ToolStripMenuItem(
+                L("Pause while video is playing", "Pausar mientras se reproduce video"), null,
+                delegate { settings.PauseForVideo = !settings.PauseForVideo; settings.Save(); });
+            videoItem.Checked = settings.PauseForVideo;
+            menu.Items.Add(videoItem);
+
             ToolStripMenuItem awakeItem = new ToolStripMenuItem(
                 L("Keep display awake", "Mantener pantalla encendida"), null,
                 delegate
@@ -410,11 +463,44 @@ namespace Wiggle
             menu.Items.Add(new ToolStripSeparator());
 
             menu.Items.Add(new ToolStripMenuItem(
+                L("About Wiggle", "Acerca de Wiggle"), null, delegate { ShowAbout(); }));
+
+            menu.Items.Add(new ToolStripMenuItem(
                 L("Check for Updates…", "Buscar actualizaciones…"), null,
                 delegate { CheckForUpdates(); }));
 
             menu.Items.Add(new ToolStripMenuItem(
                 L("Quit Wiggle", "Salir de Wiggle"), null, delegate { Quit(); }));
+        }
+
+        // ----- About -----
+
+        private const int FirstReleaseYear = 2026;
+
+        /// <summary>The app version as three numbers, e.g. "1.0.0".</summary>
+        private static string DisplayVersion()
+        {
+            int[] parts = VersionParts(Application.ProductVersion);
+            return parts[0] + "." + parts[1] + "." + parts[2];
+        }
+
+        private static void ShowAbout()
+        {
+            // The copyright line covers from the first release year up to today.
+            int year = DateTime.Now.Year;
+            string years = FirstReleaseYear.ToString(CultureInfo.InvariantCulture);
+            if (year > FirstReleaseYear)
+            {
+                years += "–" + year.ToString(CultureInfo.InvariantCulture);
+            }
+            MessageBox.Show(
+                "Wiggle " + DisplayVersion() + "\n\n"
+                    + L("Made by Daniel Solano", "Hecho por Daniel Solano") + "\n"
+                    + "Copyright © " + years + " Daniel Solano. "
+                    + L("All rights reserved.", "Todos los derechos reservados.") + "\n\n"
+                    + "https://github.com/" + Repository,
+                L("About Wiggle", "Acerca de Wiggle"),
+                MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         // ----- Update check -----
@@ -496,7 +582,7 @@ namespace Wiggle
             }
 
             string latest = tag.Groups[1].Value;
-            string current = Application.ProductVersion;
+            string current = DisplayVersion();
             if (!IsNewer(latest, current))
             {
                 MessageBox.Show(

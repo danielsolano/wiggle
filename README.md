@@ -67,11 +67,13 @@ Both platforms follow the same rules:
 | Interval | 10 s, 30 s, 1 min, 2 min, 5 min | 30 s |
 | Movement distance | 1, 2, 5, 10, 25 px | 2 px |
 | Move only when I am idle | on / off | on |
+| Pause while video is playing | on / off | off |
 | Keep display awake | on / off | on |
 | Open at login (macOS 13+ only) | on / off | off |
 
 - Wiggle checks every 2 seconds. With **Move only when I am idle** on, it nudges the cursor once you have been idle for the chosen interval, and never while you are working. With it off, it nudges every interval regardless.
 - A nudge moves the cursor sideways by the chosen distance and puts it back exactly where it was.
+- **Pause while video is playing** leaves the cursor alone while another app is keeping the display awake, which is what video players, browsers playing video, calls and presentations do. This keeps the player controls from popping up. The trade-off: chat apps measure keyboard and mouse activity, so they will still mark you as away during a long video. A tool that keeps the display awake all the time (such as `caffeinate -d`) also counts, and Wiggle will stay paused while it runs.
 - **Keep display awake** stops the display from sleeping while Wiggle is active.
 - Wiggle remembers whether it was active and restores that state the next time it starts.
 - The menu is in Spanish when the system language is Spanish, and in English otherwise.

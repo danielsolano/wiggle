@@ -67,11 +67,13 @@ Las dos plataformas siguen las mismas reglas:
 | Intervalo | 10 s, 30 s, 1 min, 2 min, 5 min | 30 s |
 | Distancia del movimiento | 1, 2, 5, 10, 25 px | 2 px |
 | Mover solo si estoy inactivo | sí / no | sí |
+| Pausar mientras se reproduce video | sí / no | no |
 | Mantener pantalla encendida | sí / no | sí |
 | Abrir al iniciar sesión (solo macOS 13+) | sí / no | no |
 
 - Wiggle revisa cada 2 segundos. Con **Mover solo si estoy inactivo** activado, mueve el cursor cuando llevas inactivo el intervalo elegido, y nunca mientras trabajas. Desactivado, lo mueve cada intervalo sin importar lo que hagas.
 - Cada movimiento desplaza el cursor hacia un lado la distancia elegida y lo regresa exactamente a donde estaba.
+- **Pausar mientras se reproduce video** deja el cursor quieto mientras otra app mantiene la pantalla encendida, que es lo que hacen los reproductores de video, los navegadores con video, las llamadas y las presentaciones. Así no aparecen los controles del reproductor. La contrapartida: las apps de chat miden la actividad de teclado y mouse, así que igual te marcarán como ausente durante un video largo. Una herramienta que mantenga la pantalla encendida todo el tiempo (como `caffeinate -d`) también cuenta, y Wiggle seguirá en pausa mientras esté corriendo.
 - **Mantener pantalla encendida** evita que la pantalla se apague mientras Wiggle está activo.
 - Wiggle recuerda si estaba activo y restaura ese estado la próxima vez que se abre.
 - El menú aparece en español cuando el idioma del sistema es español, y en inglés en cualquier otro caso.

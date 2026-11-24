@@ -32,6 +32,10 @@ enum Settings {
         get { defaults.object(forKey: "onlyWhenIdle") as? Bool ?? true }
         set { defaults.set(newValue, forKey: "onlyWhenIdle") }
     }
+    static var pauseForVideo: Bool {
+        get { defaults.bool(forKey: "pauseForVideo") }
+        set { defaults.set(newValue, forKey: "pauseForVideo") }
+    }
     /// Whether the jiggler was running when the app last quit; restored on launch.
     static var wasRunning: Bool {
         get { defaults.bool(forKey: "wasRunning") }
@@ -101,9 +105,31 @@ final class Jiggler {
         }
         // Fire one poll early so the idle time never exceeds the chosen interval.
         if idle >= Settings.interval - Jiggler.pollInterval {
+            // Moving the cursor would bring up the player controls.
+            if Settings.pauseForVideo && Jiggler.isVideoPlaying() { return }
             jiggle()
             lastJiggle = now
         }
+    }
+
+    /// True while another app is holding the display awake, which is what video
+    /// players, browsers playing video, calls and presentations do.
+    static func isVideoPlaying() -> Bool {
+        var unmanaged: Unmanaged<CFDictionary>?
+        guard IOPMCopyAssertionsByProcess(&unmanaged) == kIOReturnSuccess,
+              let byProcess = unmanaged?.takeRetainedValue() as? [NSNumber: [[String: Any]]] else {
+            return false
+        }
+        let ownPID = ProcessInfo.processInfo.processIdentifier
+        let displayTypes = ["PreventUserIdleDisplaySleep", "NoDisplaySleepAssertion"]
+        for (pid, assertions) in byProcess where pid.int32Value != ownPID {
+            for assertion in assertions {
+                let type = assertion[kIOPMAssertionTypeKey] as? String ?? ""
+                let level = (assertion[kIOPMAssertionLevelKey] as? NSNumber)?.intValue ?? 0
+                if level != 0 && displayTypes.contains(type) { return true }
+            }
+        }
+        return false
     }
 
     private func jiggle() {
@@ -282,6 +308,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         if jiggler.isBlocked {
             return L("⚠ Needs Accessibility permission", "⚠ Falta el permiso de Accesibilidad")
         }
+        if Settings.pauseForVideo && Jiggler.isVideoPlaying() {
+            return L("● Active (paused for video)", "● Activo (en pausa por video)")
+        }
         return L("● Active", "● Activo")
     }
 
@@ -344,6 +373,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         idle.state = Settings.onlyWhenIdle ? .on : .off
         menu.addItem(idle)
 
+        let video = NSMenuItem(title: L("Pause while video is playing", "Pausar mientras se reproduce video"),
+                               action: #selector(toggleVideo), keyEquivalent: "")
+        video.target = self
+        video.state = Settings.pauseForVideo ? .on : .off
+        menu.addItem(video)
+
         let awake = NSMenuItem(title: L("Keep display awake", "Mantener pantalla encendida"),
                                action: #selector(toggleAwake), keyEquivalent: "")
         awake.target = self
@@ -363,6 +398,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                             action: #selector(openAccessibility), keyEquivalent: "")
         ax.target = self
         menu.addItem(ax)
+
+        let about = NSMenuItem(title: L("About Wiggle", "Acerca de Wiggle"),
+                               action: #selector(showAbout), keyEquivalent: "")
+        about.target = self
+        menu.addItem(about)
 
         let update = NSMenuItem(title: L("Check for Updates…", "Buscar actualizaciones…"),
                                 action: #selector(checkForUpdates), keyEquivalent: "")
@@ -402,6 +442,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         Settings.onlyWhenIdle.toggle()
     }
 
+    @objc private func toggleVideo() {
+        Settings.pauseForVideo.toggle()
+    }
+
     @objc private func toggleAwake() {
         Settings.keepDisplayAwake.toggle()
         jiggler.settingsChanged()
@@ -432,6 +476,37 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
             NSWorkspace.shared.open(url)
         }
+    }
+
+    @objc private func showAbout() {
+        // The copyright line covers from the first release year up to today.
+        let firstYear = 2026
+        let year = Calendar.current.component(.year, from: Date())
+        let years = year > firstYear ? "\(firstYear)–\(year)" : "\(firstYear)"
+
+        let paragraph = NSMutableParagraphStyle()
+        paragraph.alignment = .center
+        var attributes: [NSAttributedString.Key: Any] = [
+            .font: NSFont.systemFont(ofSize: 11),
+            .foregroundColor: NSColor.labelColor,
+            .paragraphStyle: paragraph
+        ]
+        let credits = NSMutableAttributedString(
+            string: L("Made by Daniel Solano", "Hecho por Daniel Solano") + "\n", attributes: attributes)
+        attributes[.link] = URL(string: "https://github.com/\(UpdateChecker.repository)")
+        credits.append(NSAttributedString(string: "github.com/\(UpdateChecker.repository)", attributes: attributes))
+
+        // A menu bar app is not frontmost by default; bring the panel forward.
+        NSApp.activate(ignoringOtherApps: true)
+        NSApp.orderFrontStandardAboutPanel(options: [
+            .applicationName: "Wiggle",
+            .applicationVersion: UpdateChecker.currentVersion,
+            .version: "",
+            .credits: credits,
+            NSApplication.AboutPanelOptionKey(rawValue: "Copyright"): L(
+                "Copyright © \(years) Daniel Solano. All rights reserved.",
+                "Copyright © \(years) Daniel Solano. Todos los derechos reservados.")
+        ])
     }
 
     @objc private func checkForUpdates() {

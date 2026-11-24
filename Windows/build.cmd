@@ -18,7 +18,7 @@ if not exist dist mkdir dist
 set "ICON="
 if exist "Resources\Wiggle.ico" set "ICON=/win32icon:Resources\Wiggle.ico"
 
-"%CSC%" /nologo /target:winexe /optimize+ /platform:anycpu ^
+"%CSC%" /nologo /target:winexe /optimize+ /platform:anycpu /codepage:65001 ^
   /r:System.dll /r:System.Drawing.dll /r:System.Windows.Forms.dll ^
   %ICON% /out:dist\Wiggle.exe Program.cs
 if errorlevel 1 (
