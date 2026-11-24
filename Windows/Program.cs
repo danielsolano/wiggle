@@ -20,8 +20,8 @@ using System.Windows.Forms;
 [assembly: AssemblyTitle("Wiggle")]
 [assembly: AssemblyProduct("Wiggle")]
 [assembly: AssemblyCopyright("Copyright © 2026 Daniel Solano")]
-[assembly: AssemblyVersion("1.0.0.0")]
-[assembly: AssemblyFileVersion("1.0.0.0")]
+[assembly: AssemblyVersion("1.0.1.0")]
+[assembly: AssemblyFileVersion("1.0.1.0")]
 
 namespace Wiggle
 {

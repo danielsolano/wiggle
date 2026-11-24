@@ -44,7 +44,7 @@ A **W** icon appears in the menu bar. It is dimmed while Wiggle is paused and tu
 
 `./install.sh` is optional: it builds and then copies the app to `/Applications`, or to `~/Applications` when you cannot write to `/Applications`. Use it if you want "Open at login", which needs the app to stay in a fixed location.
 
-`build.sh` also produces `dist/Wiggle-<version>.dmg`. A DMG passed to another Mac is treated as a download and Gatekeeper will block it, so the reliable way to share Wiggle is to share the repo and let each person build it.
+`build.sh` also produces `dist/Wiggle-<version>.dmg`. A DMG passed to another Mac, or downloaded from the releases page, is treated as a download and Gatekeeper blocks it the first time because the app is not notarized. To open it, click **Done** in the warning, go to System Settings → Privacy & Security, scroll down and click **Open Anyway**. A managed Mac may not offer that button, so the reliable way to share Wiggle is to share the repo and let each person build it.
 
 ### Accessibility permission
 

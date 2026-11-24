@@ -468,6 +468,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             let alert = NSAlert()
             alert.messageText = L("Could not change the login item", "No se pudo cambiar el inicio automático")
             alert.informativeText = error.localizedDescription
+            alert.addButton(withTitle: L("OK", "Aceptar"))
             alert.runModal()
         }
     }
@@ -528,10 +529,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 alert.messageText = L("Wiggle is up to date", "Wiggle está actualizado")
                 alert.informativeText = L("You have the latest version (\(UpdateChecker.currentVersion)).",
                                           "Tienes la versión más reciente (\(UpdateChecker.currentVersion)).")
+                alert.addButton(withTitle: L("OK", "Aceptar"))
             case .failed:
                 alert.messageText = L("Could not check for updates", "No se pudo buscar actualizaciones")
                 alert.informativeText = L("GitHub could not be reached, or no release has been published yet.",
                                           "No se pudo contactar a GitHub, o todavía no hay ninguna versión publicada.")
+                alert.addButton(withTitle: L("OK", "Aceptar"))
             }
             // A menu bar app is not frontmost by default; bring the alert forward.
             NSApp.activate(ignoringOtherApps: true)

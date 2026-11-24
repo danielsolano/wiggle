@@ -44,7 +44,7 @@ Aparece un icono con una **W** en la barra de menú. Se ve atenuado mientras Wig
 
 `./install.sh` es opcional: compila y luego copia la app a `/Applications`, o a `~/Applications` si no puedes escribir en `/Applications`. Úsalo si quieres "Abrir al iniciar sesión", que necesita que la app se quede en una ubicación fija.
 
-`build.sh` también genera `dist/Wiggle-<versión>.dmg`. Un DMG enviado a otra Mac se trata como una descarga y Gatekeeper lo bloquea, así que la forma confiable de compartir Wiggle es compartir el repo y que cada persona la compile.
+`build.sh` también genera `dist/Wiggle-<versión>.dmg`. Un DMG enviado a otra Mac, o descargado de la página de releases, se trata como una descarga y Gatekeeper lo bloquea la primera vez porque la app no está notarizada. Para abrirla, haz clic en **Listo** (Done) en el aviso, ve a Ajustes del Sistema → Privacidad y seguridad, baja y haz clic en **Abrir de todos modos** (Open Anyway). Una Mac administrada puede no ofrecer ese botón, así que la forma confiable de compartir Wiggle es compartir el repo y que cada persona la compile.
 
 ### Permiso de Accesibilidad
 
